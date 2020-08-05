@@ -62,6 +62,25 @@ console.log("Auth Service listening on port  - ", (process.env.GROUP_PORT || 621
  * params: search_term
  * return: list of group (group_id, group_name, group_description, group_goal)
  */
+app.get('/groups/search', function(req,res) {
+    let search_term = req.body.search_term;
+    search_results = [];
+    try {
+        let query = "CALL search_for_groups(\""+search_term+"\");";
+        connection.query(query, function(err, results){
+            if(err){throw err}
+            else{
+                results.forEach(group => {
+                    found_group = new Group(group.id, group.name, group.description, group.goal);
+                    search_results.push(found_group);
+                });
+                res.sendStatus(200).send(search_results);
+            }
+        })
+    } catch (err) {
+        
+    }
+})
 
 /** Add a group to the database
  *
@@ -70,6 +89,29 @@ console.log("Auth Service listening on port  - ", (process.env.GROUP_PORT || 621
  * for each milestone, add to the database for the group w/order
  *
  */
+app.post('/groups', function(req,res){
+    let group = req.query.group;
+    let milestones = req.query.milestones;
+    try{
+        let query = "CALL add_new_group(\""+group.name+"\", \""+group.description+"\", \""+group.goal+"\", \""+group.admin+"\")";
+        connection.query(query, function (err, result){
+            if(err){throw err}
+            else{
+                let new_group_id = result;
+                milestones.forEach(ms =>{
+                    let query = "CALL Add_group_milestone("+new_group_id+", \""+ms.name+"\", "+ms.order+")";
+                    connection.query(query, function(err, result){
+                        if(err){throw err}
+                    })
+                })
+            }
+        })
+        console.log("New Group Alert!");
+    }
+    catch (err){
+
+    }
+})
 
 /**Get group Information
  *
@@ -118,3 +160,21 @@ console.log("Auth Service listening on port  - ", (process.env.GROUP_PORT || 621
  * params: comment_id
  * return: list of comments associate with commet (member_id, comment, timestamp)
  */
+
+ /**
+ * OBJECTS TO PASS DATA TO AND FROM APPLICATION. 
+ */
+
+/**
+ * holds group information 
+ */
+class Group {
+    
+    constructor(id, name, description, goal) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.goal = goal;
+    }
+
+}
