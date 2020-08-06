@@ -90,26 +90,29 @@ app.get('/groups/search', function(req,res) {
  *
  */
 app.post('/groups', function(req,res){
-    let group = req.query.group;
-    let milestones = req.query.milestones;
+    let group = req.body.group;
+    let milestones = req.body.milestones;
     try{
-        let query = "CALL add_new_group(\""+group.name+"\", \""+group.description+"\", \""+group.goal+"\", \""+group.admin+"\")";
+        let query = "CALL add_new_group(\""+group.name+"\", \""+group.description+"\", \""+group.goal+"\", "+group.admin+")";
         connection.query(query, function (err, result){
             if(err){throw err}
             else{
-                let new_group_id = result;
-                milestones.forEach(ms =>{
-                    let query = "CALL Add_group_milestone("+new_group_id+", \""+ms.name+"\", "+ms.order+")";
-                    connection.query(query, function(err, result){
-                        if(err){throw err}
-                    })
-                })
+                let new_group_id = result[0][0].inserted_id;
+                if(milestones.length != 0){
+                    milestones.forEach(ms =>{
+                        let query = "CALL Add_group_milestone("+new_group_id+", \""+ms.name+"\", "+ms.order+")";
+                        connection.query(query, function(err, result){
+                            if(err){throw err}
+                        })
+                    });
+                }
+                res.send({status: 200, message: group.name + " has been created!"});
             }
         })
-        console.log("New Group Alert!");
+        console.log("New Group Alert! - " + group.name);
     }
     catch (err){
-
+        res.send({status: 500, message:'Internal Server Error'});
     }
 })
 
@@ -170,11 +173,12 @@ app.post('/groups', function(req,res){
  */
 class Group {
     
-    constructor(id, name, description, goal) {
+    constructor(id, name, description, goal, admin) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.goal = goal;
+        this.admin = admin;
     }
 
 }
