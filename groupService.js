@@ -62,23 +62,26 @@ console.log("Auth Service listening on port  - ", (process.env.GROUP_PORT || 621
  * params: search_term
  * return: list of group (group_id, group_name, group_description, group_goal)
  */
-app.get('/groups/search', function(req,res) {
-    let search_term = req.body.search_term;
-    search_results = [];
+app.get('/groups/search/:search', function (req, res) {
+    let search_term = req.params.search;
+    let search_results = [];
     try {
-        let query = "CALL search_for_groups(\""+search_term+"\");";
-        connection.query(query, function(err, results){
-            if(err){throw err}
-            else{
-                results.forEach(group => {
-                    found_group = new Group(group.id, group.name, group.description, group.goal);
-                    search_results.push(found_group);
-                });
-                res.sendStatus(200).send(search_results);
+        let query = "CALL search_for_groups(\"" + search_term + "\");";
+        connection.query(query, function (err, result) {
+            if (err) { throw err }
+            else {
+                if (result[0].length > 0) {
+                    result[0].forEach(group => {
+                        let found_group = new Group(group.id, group.group_name, group.description, group.goal);
+                        search_results.push(found_group);
+                    });
+                }
+
+                res.send({found_groups: search_results});
             }
         })
     } catch (err) {
-        
+
     }
 })
 
@@ -89,30 +92,30 @@ app.get('/groups/search', function(req,res) {
  * for each milestone, add to the database for the group w/order
  *
  */
-app.post('/groups', function(req,res){
+app.post('/groups', function (req, res) {
     let group = req.body.group;
     let milestones = req.body.milestones;
-    try{
-        let query = "CALL add_new_group(\""+group.name+"\", \""+group.description+"\", \""+group.goal+"\", "+group.admin+")";
-        connection.query(query, function (err, result){
-            if(err){throw err}
-            else{
+    try {
+        let query = "CALL add_new_group(\"" + group.name + "\", \"" + group.description + "\", \"" + group.goal + "\", " + group.admin + ")";
+        connection.query(query, function (err, result) {
+            if (err) { throw err }
+            else {
                 let new_group_id = result[0][0].inserted_id;
-                if(milestones.length != 0){
-                    milestones.forEach(ms =>{
-                        let query = "CALL Add_group_milestone("+new_group_id+", \""+ms.name+"\", "+ms.order+")";
-                        connection.query(query, function(err, result){
-                            if(err){throw err}
+                if (milestones.length != 0) {
+                    milestones.forEach(ms => {
+                        let query = "CALL Add_group_milestone(" + new_group_id + ", \"" + ms.name + "\", " + ms.order + ")";
+                        connection.query(query, function (err, result) {
+                            if (err) { throw err }
                         })
                     });
                 }
-                res.send({status: 200, message: group.name + " has been created!"});
+                res.send({ status: 200, message: group.name + " has been created!" });
             }
         })
         console.log("New Group Alert! - " + group.name);
     }
-    catch (err){
-        res.send({status: 500, message:'Internal Server Error'});
+    catch (err) {
+        res.send({ status: 500, message: 'Internal Server Error' });
     }
 })
 
@@ -121,6 +124,21 @@ app.post('/groups', function(req,res){
  * params: group_id
  * return: group_id, group_name, group_description, group_goal, admin_name
  */
+app.get('/groups/:id', function (req, res) {
+    let group = req.params.id;
+    try {
+        let query = "CALL Get_group_information(" + group + ");";
+        connection.query(query, function (err, result) {
+            if (err) { throw err }
+            else {
+                let group_data = new Group(result[0][0].id, result[0][0].group_name, result[0][0].description, result[0][0].goal, result[0][0].admin_id)
+                res.send({ group: group_data });
+            }
+        })
+    } catch (err) {
+
+    }
+})
 
 /** Get group milestones
  * params: group_id
@@ -131,6 +149,22 @@ app.post('/groups', function(req,res){
  * params: user_id, group_id
  * return true if complete
 */
+app.post('/groups/members', function(req, res){
+    let user = req.body.user;
+    let group = req.body.group;
+    try {
+        let query ="CALL Add_user_to_group("+user+", "+group+");";
+        connection.query(query, function(err, result){
+            if(err){throw err}
+            else{
+                console.log("user: "+user+" has joined group: "+group);
+                res.send({status: 200, message: "Welcome to the Group!"});
+            }
+        })
+    } catch (err) {
+        
+    }
+})
 
 /**Add post to group
  * params: groupId, memberId, post, timestamp
@@ -164,15 +198,15 @@ app.post('/groups', function(req,res){
  * return: list of comments associate with commet (member_id, comment, timestamp)
  */
 
- /**
- * OBJECTS TO PASS DATA TO AND FROM APPLICATION. 
- */
+/**
+* OBJECTS TO PASS DATA TO AND FROM APPLICATION. 
+*/
 
 /**
  * holds group information 
  */
 class Group {
-    
+
     constructor(id, name, description, goal, admin) {
         this.id = id;
         this.name = name;
