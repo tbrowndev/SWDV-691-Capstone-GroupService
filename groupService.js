@@ -77,7 +77,7 @@ app.get('/groups/search/:search', function (req, res) {
                     });
                 }
 
-                res.send({found_groups: search_results});
+                res.send({ found_groups: search_results });
             }
         })
     } catch (err) {
@@ -149,16 +149,37 @@ app.get('/groups/:id', function (req, res) {
  * params: user_id, group_id
  * return true if complete
 */
-app.post('/groups/members', function(req, res){
+app.post('/groups/members', function (req, res) {
     let user = req.body.user;
     let group = req.body.group;
     try {
-        let query ="CALL Add_user_to_group("+user+", "+group+");";
+        let query = "CALL Add_user_to_group(" + user + ", " + group + ");";
+        connection.query(query, function (err, result) {
+            if (err) { throw err }
+            else {
+                console.log("user: " + user + " has joined group: " + group);
+                res.send({ status: 200, message: "Welcome to the Group!" });
+            }
+        })
+    } catch (err) {
+
+    }
+})
+
+/**Add post to group
+ * params: groupId, memberId, post, timestamp
+*/
+app.post('/groups/:id/posts', function(req, res){
+    let group = req.params.id;
+    let user = req.body.user;
+    let post = req.body.post;
+    try {
+        let query = "CALL Add_new_post("+group+", "+user+", \""+post+"\");";
         connection.query(query, function(err, result){
             if(err){throw err}
             else{
-                console.log("user: "+user+" has joined group: "+group);
-                res.send({status: 200, message: "Welcome to the Group!"});
+                console.log("New post in Group - "+ group);
+                res.send({status: 200, message: "Post added to group!"})
             }
         })
     } catch (err) {
@@ -166,20 +187,81 @@ app.post('/groups/members', function(req, res){
     }
 })
 
-/**Add post to group
- * params: groupId, memberId, post, timestamp
-*/
-
-/**Get all posts associated with group
+/**Get 10 most recent posts associated with group
  *
  * params: group_id
  * return list of posts (no comments) to display on the group page ( post_id, member_id, member_name, post, timestamp)
  */
+app.get('/groups/:id/posts', function(req, res){
+    let group = req.params.id;
+    let posts = [];
+    try {
+        let query = "CALL Get_top10_posts("+group+");";
+        connection.query(query, function(err, result){
+            if(err){throw err}
+            else{
+                result[0].forEach(post => {
+                    let found_post = new Post(post.id, post.group_id, post.group_name, post.full_name, post.username, post.post, post.born_date);
+                    posts.push(found_post);
+                });
+            }
+
+            res.send({status: 200, posts:posts});
+        })
+    } catch (err) {
+        
+    }
+})
+
+ /**Get next 10 most recent posts associated with group
+ *
+ * params: group_id, last_post_id
+ * return list of posts (no comments) to display on the group page ( post_id, member_id, member_name, post, timestamp)
+ */
+app.get('/groups/:id/posts/:lastPost', function(req, res){
+    let group = req.params.id;
+    let last_post_id = req.params.lastPost;
+    let posts = [];
+    try {
+        let query = "CALL Get_next10_posts("+group+", "+last_post_id+");";
+        connection.query(query, function(err, result){
+            if(err){throw err}
+            else{
+                result[0].forEach(post => {
+                    let found_post = new Post(post.id, post.group_id, post.group_name, post.full_name, post.username, post.post, post.born_date);
+                    posts.push(found_post);
+                });
+            }
+
+            res.send({status: 200, posts:posts});
+        })
+    } catch (err) {
+        
+    }
+})
 
 /**add comment to post in group
  *
- * params: post_id, member_id, comment, timestamp
+ * params: post_id, member_id, comment
  */
+app.post('/posts/:id/comments', function(req, res){
+
+    let post = req.params.id;
+    let user = req.body.user;
+    let comment = req.body.comment;
+    try {
+        let query = "CALL Add_comment_to_post("+post+", "+user+", \""+comment+"\");";
+        connection.query(query, function(err, result){
+            if(err){throw err}
+            else{
+                res.send({status:200, message:"Comment added to post"});
+            }
+        })
+    } catch (err) {
+        
+    }
+
+})
 
 /**Add comment to comment to post in a group
  *
@@ -191,6 +273,25 @@ app.post('/groups/members', function(req, res){
  * params: post_id
  * return: list of comments (member_id, comment, timestamp)
  */
+app.get('/posts/:id/comments', function(req, res){
+    let post = req.params.id;
+    let comments = [];
+    try {
+        let query = "CALL Get_post_comments("+post+");";
+        connection.query(query, function(err, result){
+            if(err){throw err}
+            else{
+                result[0].forEach(comment => {
+                    let found_comment = new Comment(comment.id, comment.post_id, comment.full_name, comment.username, comment.comment, comment.date);
+                    comments.push(found_comment);
+                })
+                res.send({status:200, comments:comments});
+            }
+        })
+    } catch (err) {
+        
+    }
+})
 
 /**Get comments to comments in post
  *
@@ -215,4 +316,34 @@ class Group {
         this.admin = admin;
     }
 
+}
+
+/**holds post information
+ * 
+ */
+class Post {
+
+    constructor(id, group_id, group_name, user_name, username, post, date){
+        this.id = id;
+        this.groupId = group_id;
+        this.groupName = group_name;
+        this.user = user_name;
+        this.username = username;
+        this.post = post
+        this.creationDate = date;
+    }
+}
+
+/**holds comment information 
+ * 
+*/
+class Comment{
+    constructor(id, post_id, user, username, comment, date){
+        this.id = id;
+        this.postId = post_id;
+        this.user = user;
+        this.username = username;
+        this.comment = comment;
+        this.creationDate = date;
+    }
 }
