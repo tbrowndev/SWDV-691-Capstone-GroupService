@@ -187,6 +187,83 @@ app.post('/groups/:id/posts', function(req, res){
     }
 })
 
+/**get post likes and tell if member liked post
+ * params: post_id, user_id
+ * return count of likes, boolean if user liked post
+ */
+app.get('/posts/:id/likes/:user', function(req, res){
+    let post = req.params.id;
+    let user = req.params.user;
+    try {
+        let query = "CALL Count_post_likes("+post+", "+user+");";
+        connection.query(query, function(err, result){
+            if(err){throw err}
+            else{
+                res.send({status: 200, likes:result[0][0].like_count, memberLiked: result[0][0].member_liked, likeId: result[0][0].like_id});
+            }
+        })
+    } catch (err) {
+        
+    }
+})
+
+/**Add like to post
+ * params: post_id, group_id, user_id
+ */
+app.post('/posts/:id/likes', function(req, res){
+    let post = req.params.id;
+    let group = req.body.group;
+    let user = req.body.user;
+    try {
+        let query = "CALL add_like_to_post("+post+", "+group+", "+user+");";
+        connection.query(query, function(err, result){
+            if(err){throw err}
+            else{
+                res.send({status:200, likeId: result[0][0].like_id})
+            }
+        })
+    } catch (err) {
+        
+    }
+})
+
+/**Delete like from post
+ * params: post_id, group_id, user_id
+ */
+app.delete('/likes/:id', function(req, res){
+    let like = req.params.id;
+    try {
+        let query = "DELETE FROM anchr.likes WHERE anchr.likes.id = "+like;
+        connection.query(query, function(err, result){
+            if(err){throw err}
+            else{
+                res.send({status:200})
+            }
+        })
+    } catch (err) {
+        
+    }
+})
+
+/**get post comment count 
+ * params: post_id
+ * return count of comments
+ */
+app.get('/posts/:id/comments/count', function(req, res){
+    let post = req.params.id;
+    try {
+        let query = "CALL Count_post_comments("+post+");";
+        connection.query(query, function(err, result){
+            if(err){throw err}
+            else{
+                res.send({status: 200, count:result[0][0].count});
+            }
+        })
+    } catch (err) {
+        
+    }
+})
+
 /**Get 10 most recent posts associated with group
  *
  * params: group_id
