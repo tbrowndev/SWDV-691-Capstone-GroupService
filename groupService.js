@@ -11,7 +11,7 @@ var cors = require('cors');
 
 // Configuration
 var connection;
-const db_config = require('../db_config.json');;
+const db_config = require('./db_amazon_config.json');;
 
 app.use(bodyParser.urlencoded({ 'extended': 'true' }));
 app.use(bodyParser.json());
