@@ -45,7 +45,8 @@ function handleDisconnect() {
         }
         else {
             console.log(err);
-            console.log(" Group Service no longer has a connection to db")
+            console.log(" Group Service no longer has a connection to db");
+            handleDisconnect();;
         }
     });
 }
