@@ -225,7 +225,7 @@ app.get('/groups/:id/milestones', function (req, res) {
             }
             else {
                 result[0].forEach(ms => {
-                    let milestone = {milestoneId:ms.milestnoe_id, name: ms.milestone_name, order:ms.order};
+                    let milestone = new Milestone(ms.id, group, ms.milestone_name, ms.order)
                     milestones.push(milestone);
                 })
                 res.send({ status: 200, milestones: milestones });
@@ -554,5 +554,17 @@ class Comment {
         this.username = username;
         this.comment = comment;
         this.creationDate = date;
+    }
+}
+
+/**holds milestone information
+ * 
+ */
+class Milestone{
+    constructor(id, group_id, name, order){
+        this.id = id;
+        this.groupId = group_id;
+        this.name = name;
+        this.order = order;
     }
 }
