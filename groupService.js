@@ -197,7 +197,7 @@ app.get('/groups/:id/members', function (req, res) {
             }
             else {
                 result[0].forEach(mem => {
-                    let member = {userId:mem.user_id, name: mem.full_name, username:mem.username}
+                    let member = { userId: mem.user_id, name: mem.full_name, username: mem.username }
                     members.push(member);
                 })
                 res.send({ status: 200, members: members });
@@ -284,6 +284,28 @@ app.post('/groups/:id/posts', function (req, res) {
     } catch (err) {
         console.log(err);
         res.send({ status: 500, message: "Internal Server Error" });
+    }
+})
+
+/**Delete Post from group
+ * params: post id
+ */
+app.delete('/posts/:id', function (req, res) {
+    let post = req.params.id;
+    try {
+        let query = "CALL Delete_post(" + post + ")";
+        connection.query(query, function (err, result) {
+            if (err) {
+                console.log(err);
+                res.send({ status: 500, message: 'Internal Server Error' });
+            }
+            else {
+                res.send({ status: 200, message: "Post Deleted" })
+            }
+        })
+    }
+    catch (err) {
+        res.send({ status: 500, message: 'Internal Server Error' });
     }
 })
 
@@ -560,8 +582,8 @@ class Comment {
 /**holds milestone information
  * 
  */
-class Milestone{
-    constructor(id, group_id, name, order){
+class Milestone {
+    constructor(id, group_id, name, order) {
         this.id = id;
         this.groupId = group_id;
         this.name = name;
