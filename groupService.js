@@ -135,7 +135,7 @@ app.post('/groups', function (req, res) {
  * params: group id
  * return if deleteionwas complete or if there was an error
  */
-app.delete('/group/:id', function (req, res) {
+app.delete('/groups/:id', function (req, res) {
     let group = req.params.id;
     try {
         let query = "CALL Delete_group(" + group + ")";
