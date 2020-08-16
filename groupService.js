@@ -81,7 +81,7 @@ app.get('/groups/search/:search', function (req, res) {
                     });
                 }
 
-                res.send({ found_groups: search_results });
+                res.send({ status: 200, found_groups: search_results });
             }
         })
     } catch (err) {
@@ -170,7 +170,7 @@ app.get('/groups/:id', function (req, res) {
             }
             else {
                 let group_data = new Group(result[0][0].id, result[0][0].group_name, result[0][0].description, result[0][0].goal, result[0][0].admin_id)
-                res.send({ group: group_data });
+                res.send({ status: 200, group: group_data });
             }
         })
     } catch (err) {
@@ -490,11 +490,6 @@ app.post('/posts/:id/comments', function (req, res) {
 
 })
 
-/**Add comment to comment to post in a group
- *
- * params: comment_id, member_id, comment, timestamp
- */
-
 /**Get comments associated with post
  *
  * params: post_id
@@ -524,11 +519,6 @@ app.get('/posts/:id/comments', function (req, res) {
     }
 })
 
-/**Get comments to comments in post
- *
- * params: comment_id
- * return: list of comments associate with commet (member_id, comment, timestamp)
- */
 
 /**
 * OBJECTS TO PASS DATA TO AND FROM APPLICATION. 
